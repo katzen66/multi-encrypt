@@ -169,4 +169,12 @@ EOF
     rm -f "${ckeyfile}"
 }
 
+run_hook()
+{
+    local DEVICES OLDIFS
+    DEVICES="$(cat cmdline | tr ' ' '\n' | grep 'cryptdevice='| sed 's/cryptdevice=//')"
+    for i in $DEVICES; do
+        decrypt_device "$i"
+    done;
+}
 # vim: set ft=sh ts=4 sw=4 et:
