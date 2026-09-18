@@ -172,7 +172,7 @@ EOF
 run_hook()
 {
     local DEVICES OLDIFS
-    DEVICES="$(cat cmdline | tr ' ' '\n' | grep 'cryptdevice='| sed 's/cryptdevice=//')"
+    DEVICES="$(cat /proc/cmdline | tr ' ' '\n' | grep 'cryptdevice='| sed 's/cryptdevice=//')"
     for i in $DEVICES; do
         decrypt_device "$i"
     done;
