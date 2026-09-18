@@ -1,9 +1,10 @@
 #!/usr/bin/ash
 
-run_hook() {
-    local quiet rootdelay
+decrypt_device() {
+    local quiet rootdelay cryptdevice
     modprobe -a -q dm-crypt >/dev/null 2>&1
     quiet="$(getarg quiet)"
+    cryptdevice="$@"
     [ "${quiet}" = "y" ] && CSQUIET=">/dev/null"
 
     # Get keyfile if specified
@@ -15,7 +16,7 @@ run_hook() {
 $cryptkey
 EOF
 
-        rootdelay="$(getarg rootdelay)"
+        #rootdelay="$(getarg rootdelay)" # need to handle outside to prevent duplicates
         if [ "$ckdev" = "rootfs" ]; then
             ckeyfile=$ckarg1
         elif resolved=$(resolve_device "${ckdev}" "${rootdelay}"); then
