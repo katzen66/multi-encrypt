@@ -1,4 +1,11 @@
 #!/usr/bin/ash
+PRINT_MESSAGE()
+{
+	if command -v plymouth >/dev/null 2>&1 && plymouth --ping 2>/dev/null;
+	then plymouth display-message --text=i$*;
+	else echo "$@";
+	fi;
+}
 
 decrypt_device() {
     local quiet rootdelay cryptdevice
@@ -36,7 +43,7 @@ EOF
                     ;;
             esac
         fi
-        [ ! -f "${ckeyfile}" ] && echo "Keyfile could not be opened. Reverting to passphrase."
+        [ ! -f "${ckeyfile}" ] && PRINT_MESSAGE "Keyfile could not be opened. Reverting to passphrase."
     fi
 
     if [ -n "${cryptdevice}" ]; then
@@ -54,13 +61,13 @@ EOF
 
     # This may happen if third party hooks do the crypt setup
     if [ -b "/dev/mapper/${cryptname}" ]; then
-        echo "Device ${cryptname} already exists, not doing any crypt setup."
+        PRINT_MESSAGE "Device ${cryptname} already exists, not doing any crypt setup."
         return 0
     fi
 
     warn_deprecated() {
-        echo "The syntax 'root=${root}' where '${root}' is an encrypted volume is deprecated"
-        echo "Use 'cryptdevice=${root}:root root=/dev/mapper/root' instead."
+        PRINT_MESSAGE "The syntax 'root=${root}' where '${root}' is an encrypted volume is deprecated"
+        PRINT_MESSAGE "Use 'cryptdevice=${root}:root root=/dev/mapper/root' instead."
     }
 
     set -f
@@ -80,7 +87,7 @@ EOF
                 cryptargs="${cryptargs} --sector-size ${cryptopt#*=}"
                 ;;
             *)
-                echo "Encryption option '${cryptopt}' not known, ignoring." >&2
+                PRINT_MESSAGE "Encryption option '${cryptopt}' not known, ignoring." >&2
                 ;;
         esac
     done
@@ -97,7 +104,7 @@ EOF
                 if eval cryptsetup --key-file "${ckeyfile}" open --type luks "${resolved}" "${cryptname}" "${cryptargs}" "${CSQUIET}"; then
                     dopassphrase=0
                 else
-                    echo "Invalid keyfile. Reverting to passphrase."
+                    PRINT_MESSAGE "Invalid keyfile. Reverting to passphrase."
                 fi
             fi
             # Ask for a passphrase
@@ -107,8 +114,8 @@ EOF
                         --prompt="A password is required to access the ${cryptname} volume" \
                         --command="cryptsetup open --type luks --key-file=- ${resolved} ${cryptname} ${cryptargs} ${CSQUIET}"
                 else
-                    echo ""
-                    echo "A password is required to access the ${cryptname} volume:"
+                    PRINT_MESSAGE ""
+                    PRINT_MESSAGE "A password is required to access the ${cryptname} volume:"
 
                     #loop until we get a real password
                     while ! eval cryptsetup open --type luks "${resolved}" "${cryptname}" "${cryptargs}" "${CSQUIET}"; do
@@ -127,7 +134,7 @@ EOF
         elif [ -n "${crypto}" ]; then
             [ "${DEPRECATED_CRYPT}" -eq 1 ] && warn_deprecated
             msg "Non-LUKS encrypted device found..."
-            if echo "$crypto" | awk -F: '{ exit(NF == 5) }'; then
+            if PRINT_MESSAGE "$crypto" | awk -F: '{ exit(NF == 5) }'; then
                 err "Verify parameter format: crypto=hash:cipher:keysize:offset:skip"
                 err "Non-LUKS decryption not attempted..."
                 return 1
@@ -146,8 +153,8 @@ EOF
             if [ -f "$ckeyfile" ]; then
                 exe="$exe --key-file $ckeyfile"
             else
-                echo ""
-                echo "A password is required to access the ${cryptname} volume:"
+                PRINT_MESSAGE ""
+                PRINT_MESSAGE "A password is required to access the ${cryptname} volume:"
             fi
             if ! eval "$exe $CSQUIET"; then
                 err "Non-LUKS device decryption failed. verify format: "

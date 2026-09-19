@@ -13,6 +13,7 @@ build() {
     fi
 
     add_binary 'cryptsetup'
+    add_binary 'tr'
 
     map add_udev_rule \
         '10-dm.rules' \
